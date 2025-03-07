@@ -3,13 +3,6 @@
 ## Overview
 This project is a chatbot application that allows users to upload a text-based PDF file, extract its content, and interact with it by asking questions. The chatbot leverages LLM API and a vector-based retrieval system to generate context-aware responses based on the uploaded document. The user interface is built with Gradio for an interactive and user-friendly experience.
 
-## Features
-- **PDF Upload & Text Extraction**: Users can upload a text-based PDF file, and the application extracts its content.
-- **LLM Integration**: Uses OpenAI's LLM API for intelligent response generation.
-- **Vector Search with FAISS**: Extracted text is stored as vector embeddings for efficient retrieval.
-- **Conversational Interface**: Supports multi-turn conversations with context retention.
-- **Gradio UI**: Provides a simple and intuitive interface for user interaction.
-
 ## Tech Stack
 - **Python (3.9+)**
 - **Gradio** (for UI development)
