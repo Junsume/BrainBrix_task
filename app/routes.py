@@ -2,11 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import json
 from . import models, schemas
-from .database import get_db
+from .database import SessionLocal
 
 router = APIRouter()
 
-# Function to load tasks from a JSON file
+# Dependency to get the database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Function to load tasks from a JSON file5
 def load_tasks_from_json(file_path: str):
     with open(file_path, 'r') as file:
         tasks = json.load(file)
