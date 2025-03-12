@@ -1,16 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-import json
 from . import models, schemas
 from .database import get_db
 
 router = APIRouter()
-
-# Function to load tasks from a JSON file
-def load_tasks_from_json(file_path: str):
-    with open(file_path, 'r') as file:
-        tasks = json.load(file)
-    return tasks
 
 # Route to create a new todo item
 @router.post("/todos/", response_model=schemas.TodoItem)
@@ -21,15 +14,32 @@ def create_todo(todo: schemas.TodoItemCreate, db: Session = Depends(get_db)):
     db.refresh(db_todo)
     return db_todo
 
-# Route to get all todo items
+# Route to get all todo items with pagination and sorting
 @router.get("/todos/", response_model=list[schemas.TodoItem])
-def read_todos(db: Session = Depends(get_db)):
-    return db.query(models.TodoItem).all()
+def read_todos(
+    skip: int = Query(0, description="Number of items to skip"),
+    limit: int = Query(10, description="Maximum number of items to return"),
+    sort_by: str = Query("created_at", description="Field to sort by"),
+    order: str = Query("asc", description="Order of sorting: asc or desc"),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.TodoItem).filter(models.TodoItem.is_deleted == False)
+
+    # Sorting logic
+    if sort_by == "created_at":
+        query = query.order_by(models.TodoItem.created_at.asc() if order == "asc" else models.TodoItem.created_at.desc())
+    elif sort_by == "updated_at":
+        query = query.order_by(models.TodoItem.updated_at.asc() if order == "asc" else models.TodoItem.updated_at.desc())
+    elif sort_by == "completed":
+        query = query.order_by(models.TodoItem.completed.asc() if order == "asc" else models.TodoItem.completed.desc())
+
+    todos = query.offset(skip).limit(limit).all()
+    return todos
 
 # Route to get a todo item by ID
 @router.get("/todos/{todo_id}", response_model=schemas.TodoItem)
 def read_todo(todo_id: int, db: Session = Depends(get_db)):
-    db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first()
+    db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id, models.TodoItem.is_deleted == False).first()
     if db_todo is None:
         raise HTTPException(status_code=404, detail="Todo not found")
     return db_todo
@@ -37,7 +47,7 @@ def read_todo(todo_id: int, db: Session = Depends(get_db)):
 # Route to update a todo item
 @router.put("/todos/{todo_id}", response_model=schemas.TodoItem)
 def update_todo(todo_id: int, todo: schemas.TodoItemCreate, db: Session = Depends(get_db)):
-    db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first()
+    db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id, models.TodoItem.is_deleted == False).first()
     if db_todo is None:
         raise HTTPException(status_code=404, detail="Todo not found")
     for key, value in todo.dict().items():
@@ -46,22 +56,12 @@ def update_todo(todo_id: int, todo: schemas.TodoItemCreate, db: Session = Depend
     db.refresh(db_todo)
     return db_todo
 
-# Route to delete a todo item
+# Route to delete a todo item (soft delete)
 @router.delete("/todos/{todo_id}", response_model=schemas.TodoItem)
 def delete_todo(todo_id: int, db: Session = Depends(get_db)):
     db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id).first()
     if db_todo is None:
         raise HTTPException(status_code=404, detail="Todo not found")
-    db.delete(db_todo)
+    db_todo.is_deleted = True  # Soft delete
     db.commit()
     return db_todo
-
-# Route to load tasks from a JSON file
-@router.post("/load_tasks/")
-def load_tasks(file_path: str = "tasks.json", db: Session = Depends(get_db)):
-    tasks = load_tasks_from_json(file_path)
-    for task in tasks:
-        db_task = models.TodoItem(**task)
-        db.add(db_task)
-    db.commit()
-    return {"message": "Tasks loaded successfully"}

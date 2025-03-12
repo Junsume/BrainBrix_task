@@ -9,7 +9,7 @@ app = FastAPI()
 # Create the database tables
 Base.metadata.create_all(bind=engine)
 
-# Include the router
+# Include the router for the API endpoints
 app.include_router(router)
 
 # Optional: Add a root endpoint
