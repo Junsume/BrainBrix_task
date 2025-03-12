@@ -53,15 +53,29 @@ todo_app/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                # Entry point for the FastAPI application
-│   ├── models.py              # SQLAlchemy models for todo items
+│   ├── database.py            # setup for interacting with a database using SQLAlchemy in a Python application
+│   ├── models.py              # SQLAlchemy models for todo items (Defining the table todo_items)
 │   ├── schemas.py             # Pydantic models for data validation
 │   └── routes.py              # API route definitions
 │
-├── create_tables.py
-├── tasks.json
-├── test_main.py
-└── README.md                   # Project documentation
+├── create_tables.py           # (Optional) Creating the table defined in models.py, (run by -> `python create_tables.py`)
+├── tasks.json                 # data file
+├── test_main.py               
+└── README.md                  # Project documentation
 ```
+## Running the Tests
+
+To run the tests, you can use pytest. Make sure you have pytest installed in your virtual environment:
+```bash
+pip install pytest
+```
+Then, you can run the tests from the command line:
+```bash
+pytest test_main.py
+```
+This will execute all the test functions in the test_main.py file and report the results.
+
+
 
 ## API Development
 
