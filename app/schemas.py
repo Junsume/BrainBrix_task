@@ -9,6 +9,11 @@ class TodoItemBase(BaseModel):
 class TodoItemCreate(TodoItemBase):
     pass
 
+class TodoItemUpdate(BaseModel):
+    title: str = None  # Optional, can be updated
+    description: str = None  # Optional, can be updated
+    completed: bool = None  # Optional, can be updated
+
 class TodoItem(TodoItemBase):
     id: int
     created_at: datetime

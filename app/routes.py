@@ -2,17 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from . import models, schemas
 from .database import get_db
+from datetime import datetime
 
 router = APIRouter()
 
 # Route to create a new todo item
 @router.post("/todos/", response_model=schemas.TodoItem)
 def create_todo(todo: schemas.TodoItemCreate, db: Session = Depends(get_db)):
-    db_todo = models.TodoItem(**todo.dict())
-    db.add(db_todo)
-    db.commit()
-    db.refresh(db_todo)
-    return db_todo
+    try:
+        db_todo = models.TodoItem(**todo.dict())
+        db.add(db_todo)
+        db.commit()
+        db.refresh(db_todo)
+        return db_todo
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 # Route to get all todo items with pagination and sorting
 @router.get("/todos/", response_model=list[schemas.TodoItem])
@@ -36,22 +40,24 @@ def read_todos(
     todos = query.offset(skip).limit(limit).all()
     return todos
 
-# Route to get a todo item by ID
-@router.get("/todos/{todo_id}", response_model=schemas.TodoItem)
-def read_todo(todo_id: int, db: Session = Depends(get_db)):
-    db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id, models.TodoItem.is_deleted == False).first()
-    if db_todo is None:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    return db_todo
-
 # Route to update a todo item
 @router.put("/todos/{todo_id}", response_model=schemas.TodoItem)
-def update_todo(todo_id: int, todo: schemas.TodoItemCreate, db: Session = Depends(get_db)):
+def update_todo(todo_id: int, todo: schemas.TodoItemUpdate, db: Session = Depends(get_db)):
     db_todo = db.query(models.TodoItem).filter(models.TodoItem.id == todo_id, models.TodoItem.is_deleted == False).first()
     if db_todo is None:
         raise HTTPException(status_code=404, detail="Todo not found")
-    for key, value in todo.dict().items():
-        setattr(db_todo, key, value)
+
+    # Update only the fields that are provided in the request
+    if todo.title is not None:
+        db_todo.title = todo.title
+    if todo.description is not None:
+        db_todo.description = todo.description
+    if todo.completed is not None:
+        db_todo.completed = todo.completed
+
+    # Update the updated_at timestamp
+    db_todo.updated_at = datetime.now()  # Set to current time
+
     db.commit()
     db.refresh(db_todo)
     return db_todo
