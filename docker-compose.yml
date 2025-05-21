@@ -1,0 +1,24 @@
+services:
+  redis:
+    image: redis:6.2
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    container_name: celery_worker
+    command: celery -A app.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
